@@ -63,19 +63,41 @@ displaying all listed files and folders in a grid.
 ## Replacing Existing Commands Using Aliases
 
 ::: warning Caution!
-When replacing commands it is best to "back up" the command first and avoid recursion error.
+When replacing commands use the percent sigil `%` to call the original command and avoid recursion error.
 :::
 
-How to back up a command like `ls`:
+The recommended way to replace an existing command is to shadow the command.
+Here is an example shadowing the `ls` command.
 
 ```nu
-alias core-ls = ls    # This will create a new alias core-ls for ls
+# List the filenames, sizes, and modification times of items in a directory.
+def ls [
+    --all (-a),         # Show hidden files
+    --long (-l),        # Get all available columns for each entry (slower; columns are platform-dependent)
+    --short-names (-s), # Only print the file names, and not the path
+    --full-paths (-f),  # display paths as absolute paths
+    --du (-d),          # Display the apparent directory size ("disk usage") in place of the directory metadata size
+    --directory (-D),   # List the specified directory itself instead of its contents
+    --mime-type (-m),   # Show mime-type in type column instead of 'file' (based on filenames only; files' contents are not examined)
+    --threads (-t),     # Use multiple threads to list contents. Output will be non-deterministic.
+    ...pattern: glob,   # The glob pattern to use.
+]: [ nothing -> table ] {
+    let pattern = if ($pattern | is-empty) { [ '.' ] } else { $pattern }
+    (%ls
+        --all=$all
+        --long=$long
+        --short-names=$short_names
+        --full-paths=$full_paths
+        --du=$du
+        --directory=$directory
+        --mime-type=$mime_type
+        --threads=$threads
+        ...$pattern
+    ) | sort-by type name -i
+}
 ```
 
-Now you can use `core-ls` as `ls` in your nu-programming. You will see further down how to use `core-ls`.
-
-The reason you need to use alias is because, unlike `def`, aliases are position-dependent. So, you need to "back up" the old command first with an alias, before re-defining it.
-If you do not backup the command and you replace the command using `def` you get a recursion error.
+Forgetting the `%` will lead to an error:
 
 ```nu
 def ls [] { ls }; ls    # Do *NOT* do this! This will throw a recursion error
@@ -92,36 +114,13 @@ def ls [] { ls }; ls    # Do *NOT* do this! This will throw a recursion error
 #     ╰────
 ```
 
-The recommended way to replace an existing command is to shadow the command.
-Here is an example shadowing the `ls` command.
+If you want to wrap an already defined (non-built-in) function, you can use alias to "back up" the original
 
 ```nu
-# alias the built-in ls command to ls-builtins
-alias ls-builtin = ls
-
-# List the filenames, sizes, and modification times of items in a directory.
-def ls [
-    --all (-a),         # Show hidden files
-    --long (-l),        # Get all available columns for each entry (slower; columns are platform-dependent)
-    --short-names (-s), # Only print the file names, and not the path
-    --full-paths (-f),  # display paths as absolute paths
-    --du (-d),          # Display the apparent directory size ("disk usage") in place of the directory metadata size
-    --directory (-D),   # List the specified directory itself instead of its contents
-    --mime-type (-m),   # Show mime-type in type column instead of 'file' (based on filenames only; files' contents are not examined)
-    --threads (-t),     # Use multiple threads to list contents. Output will be non-deterministic.
-    ...pattern: glob,   # The glob pattern to use.
-]: [ nothing -> table ] {
-    let pattern = if ($pattern | is-empty) { [ '.' ] } else { $pattern }
-    (ls-builtin
-        --all=$all
-        --long=$long
-        --short-names=$short_names
-        --full-paths=$full_paths
-        --du=$du
-        --directory=$directory
-        --mime-type=$mime_type
-        --threads=$threads
-        ...$pattern
-    ) | sort-by type name -i
+alias ls-prev = ls
+def ls [] {
+    ls-prev | table --icons
 }
 ```
+
+You can use alias is because, unlike `def`, aliases are position-dependent. So, you can "back up" the old command first with an alias, before re-defining it.
