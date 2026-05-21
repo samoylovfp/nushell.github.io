@@ -63,7 +63,7 @@ displaying all listed files and folders in a grid.
 ## Replacing Existing Commands Using Aliases
 
 ::: warning Caution!
-When replacing commands use the percent sigil `%` to call the original command and avoid recursion error.
+When replacing commands, use the percent sigil `%` to call the builtin command and avoid recursion error.
 :::
 
 The recommended way to replace an existing command is to shadow the command.
